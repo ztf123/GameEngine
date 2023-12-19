@@ -1,4 +1,6 @@
 #include "Texture2D.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 Texture2D* Texture2D::LoadFromFile(std::string& image_file_path)
 {
     Texture2D* texture2d = new Texture2D();
@@ -25,7 +27,25 @@ Texture2D* Texture2D::LoadFromFile(std::string& image_file_path)
             break;
         }
         }
+
     }
+    else
+    {
+        std::cout << "loadTexture error "<< std::endl;
+    }
+    //1. 通知显卡创建纹理对象，返回句柄;
+    glGenTextures(1, &(texture2d->gl_texture_id_));
+
+    //2. 将纹理绑定到特定纹理目标;
+    glBindTexture(GL_TEXTURE_2D, texture2d->gl_texture_id_);
+
+    //3. 将图片rgb数据上传到GPU;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture2d->width, texture2d->height, 0, texture2d->gl_texture_format_, GL_UNSIGNED_BYTE, data);
+
+    //4. 指定放大，缩小滤波方式，线性滤波，即放大缩小的插值方式;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
     //释放图片文件内存
     stbi_image_free(data);
     return texture2d;

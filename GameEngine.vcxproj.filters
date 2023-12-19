@@ -21,7 +21,7 @@
     <ClCompile Include="include\glad.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\Texture2D.cpp">
+    <ClCompile Include="src\texture2d.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,7 +32,7 @@
     <ClInclude Include="include\VertexData.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="include\Texture2D.h">
+    <ClInclude Include="include\texture2d.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

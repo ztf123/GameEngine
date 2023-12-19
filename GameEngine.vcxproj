@@ -151,11 +151,11 @@
   <ItemGroup>
     <ClCompile Include="include\glad.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="src\Texture2D.cpp" />
+    <ClCompile Include="src\texture2d.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ShaderSource.h" />
-    <ClInclude Include="include\Texture2D.h" />
+    <ClInclude Include="include\texture2d.h" />
     <ClInclude Include="include\VertexData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

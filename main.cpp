@@ -13,7 +13,7 @@
 #include "ShaderSource.h"
 #include "VertexData.h"
 
-
+#include "texture2d.h"
 using namespace std;
 
 static void error_callback(int error, const char* description)
@@ -22,9 +22,9 @@ static void error_callback(int error, const char* description)
 }
 GLFWwindow* window;
 GLuint vertex_shader, fragment_shader, program;
-GLint vpos_location, vcol_location, mvp_location;
-GLuint vao, vbo_pos, vbo_color;
-
+GLint mvp_location, vpos_location, vcol_location, u_diffuse_texture_location, a_uv_location;
+GLuint vao, vbo_pos, vbo_color, vbo_uv;
+Texture2D* texture2d=nullptr;
 void init_opengl()
 {
     cout << "init opengl" << endl;
@@ -121,7 +121,7 @@ void create_buffer() {
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo_pos);
     glGenBuffers(1, &vbo_color);
-
+    glGenBuffers(1, &vbo_uv);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_pos);
@@ -134,20 +134,34 @@ void create_buffer() {
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, false, sizeof(glm::vec4), (void*)0);
     glEnableVertexAttribArray(vcol_location);//启用顶点Shader属性(a_color)，指定与顶点颜色数据进行关联
 
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(kUvs), kUvs, GL_STATIC_DRAW);
+    glVertexAttribPointer(a_uv_location, 2, GL_FLOAT, false, sizeof(glm::vec2), (void*)0);
+    glEnableVertexAttribArray(a_uv_location);//启用顶点Shader属性(a_color)，指定与顶点颜色数据进行关联
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
 }
+//创建Texture
+void CreateTexture(std::string image_file_path)
+{
+    texture2d = Texture2D::LoadFromFile(image_file_path);
+}
+
 int main()
 {
     //初始化opengl
     init_opengl();
     compile_shader();
+    CreateTexture("data/urban.jpg");
     //获取shader属性ID
     mvp_location = glGetUniformLocation(program, "u_mvp");
     vpos_location = glGetAttribLocation(program, "a_pos");
     vcol_location = glGetAttribLocation(program, "a_color");
-   
+    a_uv_location = glGetAttribLocation(program, "a_uv");
+    u_diffuse_texture_location = glGetUniformLocation(program, "u_diffuse_texture");
+
     create_buffer();
     while (!glfwWindowShouldClose(window))
     {
@@ -177,17 +191,29 @@ int main()
         projection = glm::perspective(glm::radians(60.f), ratio, 1.f, 1000.f);
 
         mvp = projection * view * model;
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
+       
+
         //指定GPU程序(就是指定顶点着色器、片段着色器)
         glUseProgram(program);
         {
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);//开启背面剔除
+
+            glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
+            //贴图设置
+             //激活纹理单元0
+            glActiveTexture(GL_TEXTURE0);
+            //将加载的图片纹理句柄，绑定到纹理单元0的Texture2D上。
+            glBindTexture(GL_TEXTURE_2D, texture2d->gl_texture_id_);
+            //设置Shader程序从纹理单元0读取颜色数据
+            glUniform1i(u_diffuse_texture_location, 0);
+
             glBindVertexArray(vao);
 
             //上传顶点数据并进行绘制
             glDrawArrays(GL_TRIANGLES, 0, 6*6);
         }
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);//开启背面剔除
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
