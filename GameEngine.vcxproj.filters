@@ -18,16 +18,22 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\glad.c">
+    <ClCompile Include="include\glad.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Texture2D.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ShaderSource.h">
-      <Filter>源文件</Filter>
+    <ClInclude Include="include\ShaderSource.h">
+      <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\VertexData.h">
-      <Filter>源文件</Filter>
+    <ClInclude Include="include\VertexData.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Texture2D.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
