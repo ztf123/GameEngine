@@ -149,8 +149,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="include\glad.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\texture2d.cpp" />
   </ItemGroup>
   <ItemGroup>

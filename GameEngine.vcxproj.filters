@@ -18,10 +18,10 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="include\glad.c">
+    <ClCompile Include="src\texture2d.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\texture2d.cpp">
+    <ClCompile Include="src\glad.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
