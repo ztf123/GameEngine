@@ -1,52 +1,42 @@
 #include "Texture2D.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include <fstream>
 Texture2D* Texture2D::LoadFromFile(std::string& image_file_path)
 {
     Texture2D* texture2d = new Texture2D();
-    stbi_set_flip_vertically_on_load(true);//翻转图片，解析出来的图片数据从左下角开始，这是因为OpenGL的纹理坐标起始点为左下角。
-    int channels_in_file;//通道数
-    unsigned char* data = stbi_load(image_file_path.c_str(), &(texture2d->width), &(texture2d->height), &channels_in_file, 0);
-    if (data != nullptr)
-    {
-        //根据颜色通道数，判断颜色格式。
-        switch (channels_in_file) {
-        case 1:
-        {
-            texture2d->gl_texture_format_ = GL_ALPHA;
-            break;
-        }
-        case 3:
-        {
-            texture2d->gl_texture_format_ = GL_RGB;
-            break;
-        }
-        case 4:
-        {
-            texture2d->gl_texture_format_ = GL_RGBA;
-            break;
-        }
-        }
 
-    }
-    else
-    {
-        std::cout << "loadTexture error "<< std::endl;
-    }
+
+    //读取 cpt 压缩纹理文件
+    ifstream input_file_stream(image_file_path, ios::in | ios::binary);
+    CptFileHead cpt_file_head;
+    input_file_stream.read((char*)&cpt_file_head, sizeof(CptFileHead));
+
+    unsigned char* data = (unsigned char*)malloc(cpt_file_head.compress_size_);
+    input_file_stream.read((char*)data, cpt_file_head.compress_size_);
+    input_file_stream.close();
+
+
+    texture2d->gl_texture_format_ = cpt_file_head.gl_texture_format_;
+    texture2d->width = cpt_file_head.width_;
+    texture2d->height= cpt_file_head.height_;
+
+
     //1. 通知显卡创建纹理对象，返回句柄;
     glGenTextures(1, &(texture2d->gl_texture_id_));
 
     //2. 将纹理绑定到特定纹理目标;
     glBindTexture(GL_TEXTURE_2D, texture2d->gl_texture_id_);
 
-    //3. 将图片rgb数据上传到GPU;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture2d->width, texture2d->height, 0, texture2d->gl_texture_format_, GL_UNSIGNED_BYTE, data);
+   
+        //3. 将压缩纹理数据上传到GPU;
+        glCompressedTexImage2D(GL_TEXTURE_2D, 0, texture2d->gl_texture_format_, texture2d->width, texture2d->height, 0, cpt_file_head.compress_size_, data);
 
     //4. 指定放大，缩小滤波方式，线性滤波，即放大缩小的插值方式;
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    //释放图片文件内存
-    stbi_image_free(data);
+    delete (data);
+
     return texture2d;
 }

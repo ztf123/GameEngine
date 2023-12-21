@@ -154,7 +154,7 @@ int main()
     //初始化opengl
     init_opengl();
     compile_shader();
-    CreateTexture("data/urban.jpg");
+    CreateTexture("data/urban.cpt");
     //获取shader属性ID
     mvp_location = glGetUniformLocation(program, "u_mvp");
     vpos_location = glGetAttribLocation(program, "a_pos");
