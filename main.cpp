@@ -23,7 +23,7 @@ static void error_callback(int error, const char* description)
 GLFWwindow* window;
 GLuint vertex_shader, fragment_shader, program;
 GLint mvp_location, vpos_location, vcol_location, u_diffuse_texture_location, a_uv_location;
-GLuint vao, vbo_pos, vbo_color, vbo_uv;
+GLuint vao, vbo, ebo;
 Texture2D* texture2d=nullptr;
 void init_opengl()
 {
@@ -119,26 +119,30 @@ void compile_shader()
 }
 void create_buffer() {
     glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo_pos);
-    glGenBuffers(1, &vbo_color);
-    glGenBuffers(1, &vbo_uv);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
 
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_pos);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(kPositions), kPositions, GL_STATIC_DRAW);
+ 
+    //将缓冲区对象指定为顶点缓冲区对象
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    //上传顶点数据到缓冲区对象
+    glBufferData(GL_ARRAY_BUFFER, kVertexRemoveDumplicateVector.size() * sizeof(Vertex), &kVertexRemoveDumplicateVector[0], GL_STATIC_DRAW);
+
+
+    //将缓冲区对象指定为顶点索引缓冲区对象
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    //上传顶点索引数据到缓冲区对象
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, kVertexIndexVector.size() * sizeof(unsigned short), &kVertexIndexVector[0], GL_STATIC_DRAW);
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, false, sizeof(glm::vec3), (void*)0);
     glEnableVertexAttribArray(vpos_location);//启用顶点Shader属性(a_pos)，指定与顶点坐标数据进行关联
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(kColors), kColors, GL_STATIC_DRAW);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, false, sizeof(glm::vec4), (void*)0);
+    glVertexAttribPointer(vcol_location, 4, GL_FLOAT, false, sizeof(glm::vec4), (void*)(sizeof(float) * 3));
     glEnableVertexAttribArray(vcol_location);//启用顶点Shader属性(a_color)，指定与顶点颜色数据进行关联
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(kUvs), kUvs, GL_STATIC_DRAW);
-    glVertexAttribPointer(a_uv_location, 2, GL_FLOAT, false, sizeof(glm::vec2), (void*)0);
+    glVertexAttribPointer(a_uv_location, 2, GL_FLOAT, false, sizeof(glm::vec2), (void*)(sizeof(float) * (3 + 4)));
     glEnableVertexAttribArray(a_uv_location);//启用顶点Shader属性(a_color)，指定与顶点颜色数据进行关联
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -151,6 +155,7 @@ void CreateTexture(std::string image_file_path)
 
 int main()
 {
+    VertexRemoveDumplicate();
     //初始化opengl
     init_opengl();
     compile_shader();
@@ -211,8 +216,9 @@ int main()
             glBindVertexArray(vao);
 
             //上传顶点数据并进行绘制
-            glDrawArrays(GL_TRIANGLES, 0, 6*6);
-        }
+            glDrawElements(GL_TRIANGLES, kVertexIndexVector.size(), GL_UNSIGNED_SHORT, 0);//使用顶点索引进行绘制，最后的0表示数据偏移量。
+            glBindVertexArray(0);
+            }
 
 
         glfwSwapBuffers(window);
