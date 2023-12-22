@@ -150,13 +150,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\glad.c" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="include\shader.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\meshfilter.cpp" />
     <ClCompile Include="src\texture2d.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\shader.h" />
     <ClInclude Include="include\ShaderSource.h" />
     <ClInclude Include="include\texture2d.h" />
     <ClInclude Include="include\VertexData.h" />
+    <ClInclude Include="meshfilter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

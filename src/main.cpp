@@ -12,8 +12,9 @@
 #include <stdio.h>
 #include "ShaderSource.h"
 #include "VertexData.h"
-
+#include "meshfilter.h"
 #include "texture2d.h"
+#include "shader.h"
 using namespace std;
 
 static void error_callback(int error, const char* description)
@@ -21,10 +22,11 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error: %s\n", description);
 }
 GLFWwindow* window;
-GLuint vertex_shader, fragment_shader, program;
 GLint mvp_location, vpos_location, vcol_location, u_diffuse_texture_location, a_uv_location;
 GLuint vao, vbo, ebo;
 Texture2D* texture2d=nullptr;
+Shader* shader;
+Mesh* mesh;
 void init_opengl()
 {
     cout << "init opengl" << endl;
@@ -65,86 +67,34 @@ void init_opengl()
 
 }
 
-void compile_shader()
-{
-    //创建顶点Shader
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    //指定Shader源码
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    //编译Shader
-    glCompileShader(vertex_shader);
-    //获取编译结果
-    GLint compile_status = GL_FALSE;
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &compile_status);
-    if (compile_status == GL_FALSE)
-    {
-        GLchar message[256];
-        glGetShaderInfoLog(vertex_shader, sizeof(message), 0, message);
-        cout << "compile vs error:" << message << endl;
-    }
 
-    //创建片段Shader
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    //指定Shader源码
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    //编译Shader
-    glCompileShader(fragment_shader);
-    //获取编译结果
-    compile_status = GL_FALSE;
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &compile_status);
-    if (compile_status == GL_FALSE)
-    {
-        GLchar message[256];
-        glGetShaderInfoLog(fragment_shader, sizeof(message), 0, message);
-        cout << "compile fs error:" << message << endl;
-    }
-
-
-    //创建GPU程序
-    program = glCreateProgram();
-    //附加Shader
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    //Link
-    glLinkProgram(program);
-    //获取编译结果
-    GLint link_status = GL_FALSE;
-    glGetProgramiv(program, GL_LINK_STATUS, &link_status);
-    if (link_status == GL_FALSE)
-    {
-        GLchar message[256];
-        glGetProgramInfoLog(program, sizeof(message), 0, message);
-        cout << "link error:" << message << endl;
-    }
-}
 void create_buffer() {
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
 
- 
+    glBindVertexArray(vao);
     //将缓冲区对象指定为顶点缓冲区对象
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     //上传顶点数据到缓冲区对象
-    glBufferData(GL_ARRAY_BUFFER, kVertexRemoveDumplicateVector.size() * sizeof(Vertex), &kVertexRemoveDumplicateVector[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,mesh->vertex_num_ * sizeof(Vertex), mesh->vertex_data_, GL_STATIC_DRAW);
 
 
     //将缓冲区对象指定为顶点索引缓冲区对象
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     //上传顶点索引数据到缓冲区对象
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, kVertexIndexVector.size() * sizeof(unsigned short), &kVertexIndexVector[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, false, sizeof(glm::vec3), (void*)0);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->vertex_index_num_ * sizeof(unsigned short), mesh->vertex_index_data_, GL_STATIC_DRAW);
+    glVertexAttribPointer(vpos_location, 3, GL_FLOAT, false, sizeof(Vertex), (void*)0);
     glEnableVertexAttribArray(vpos_location);//启用顶点Shader属性(a_pos)，指定与顶点坐标数据进行关联
 
-    glVertexAttribPointer(vcol_location, 4, GL_FLOAT, false, sizeof(glm::vec4), (void*)(sizeof(float) * 3));
+    glVertexAttribPointer(vcol_location, 4, GL_FLOAT, false, sizeof(Vertex), (void*)(sizeof(float) * 3));
     glEnableVertexAttribArray(vcol_location);//启用顶点Shader属性(a_color)，指定与顶点颜色数据进行关联
 
-    glVertexAttribPointer(a_uv_location, 2, GL_FLOAT, false, sizeof(glm::vec2), (void*)(sizeof(float) * (3 + 4)));
+    glVertexAttribPointer(a_uv_location, 2, GL_FLOAT, false, sizeof(Vertex), (void*)(sizeof(float) * (3 + 4)));
     glEnableVertexAttribArray(a_uv_location);//启用顶点Shader属性(a_color)，指定与顶点颜色数据进行关联
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 }
 //创建Texture
@@ -156,16 +106,20 @@ void CreateTexture(std::string image_file_path)
 int main()
 {
     VertexRemoveDumplicate();
+    MeshFilter meshFilter;
+   //meshFilter.ExportMesh("data/model/cube.mesh",kVertexRemoveDumplicateVector, kVertexIndexVector);
+   meshFilter.LoadMesh("data/model/cube.mesh");
+   mesh = meshFilter.mesh();
     //初始化opengl
     init_opengl();
-    compile_shader();
+    shader = Shader::Find("data/shader/unlit");
     CreateTexture("data/urban.cpt");
     //获取shader属性ID
-    mvp_location = glGetUniformLocation(program, "u_mvp");
-    vpos_location = glGetAttribLocation(program, "a_pos");
-    vcol_location = glGetAttribLocation(program, "a_color");
-    a_uv_location = glGetAttribLocation(program, "a_uv");
-    u_diffuse_texture_location = glGetUniformLocation(program, "u_diffuse_texture");
+    mvp_location = glGetUniformLocation(shader->gl_program_id(), "u_mvp");
+    vpos_location = glGetAttribLocation(shader->gl_program_id(), "a_pos");
+    vcol_location = glGetAttribLocation(shader->gl_program_id(), "a_color");
+    a_uv_location = glGetAttribLocation(shader->gl_program_id(), "a_uv");
+    u_diffuse_texture_location = glGetUniformLocation(shader->gl_program_id(), "u_diffuse_texture");
 
     create_buffer();
     while (!glfwWindowShouldClose(window))
@@ -199,7 +153,7 @@ int main()
        
 
         //指定GPU程序(就是指定顶点着色器、片段着色器)
-        glUseProgram(program);
+        glUseProgram(shader->gl_program_id());
         {
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);//开启背面剔除
@@ -216,7 +170,7 @@ int main()
             glBindVertexArray(vao);
 
             //上传顶点数据并进行绘制
-            glDrawElements(GL_TRIANGLES, kVertexIndexVector.size(), GL_UNSIGNED_SHORT, 0);//使用顶点索引进行绘制，最后的0表示数据偏移量。
+            glDrawElements(GL_TRIANGLES,36, GL_UNSIGNED_SHORT, 0);//使用顶点索引进行绘制，最后的0表示数据偏移量。
             glBindVertexArray(0);
             }
 
