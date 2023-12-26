@@ -26,7 +26,7 @@ GLint mvp_location, vpos_location, vcol_location, u_diffuse_texture_location, a_
 GLuint vao, vbo, ebo;
 Texture2D* texture2d=nullptr;
 Shader* shader;
-Mesh* mesh;
+MeshFilter* meshFilter=nullptr;
 void init_opengl()
 {
     cout << "init opengl" << endl;
@@ -77,13 +77,13 @@ void create_buffer() {
     //将缓冲区对象指定为顶点缓冲区对象
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     //上传顶点数据到缓冲区对象
-    glBufferData(GL_ARRAY_BUFFER,mesh->vertex_num_ * sizeof(Vertex), mesh->vertex_data_, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, meshFilter->mesh()->vertex_num_ * sizeof(Vertex), meshFilter->mesh()->vertex_data_, GL_STATIC_DRAW);
 
 
     //将缓冲区对象指定为顶点索引缓冲区对象
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     //上传顶点索引数据到缓冲区对象
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->vertex_index_num_ * sizeof(unsigned short), mesh->vertex_index_data_, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshFilter->mesh()->vertex_index_num_ * sizeof(unsigned short), meshFilter->mesh()->vertex_index_data_, GL_STATIC_DRAW);
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, false, sizeof(Vertex), (void*)0);
     glEnableVertexAttribArray(vpos_location);//启用顶点Shader属性(a_pos)，指定与顶点坐标数据进行关联
 
@@ -106,10 +106,9 @@ void CreateTexture(std::string image_file_path)
 int main()
 {
     VertexRemoveDumplicate();
-    MeshFilter meshFilter;
+    meshFilter = new MeshFilter();
    //meshFilter.ExportMesh("data/model/cube.mesh",kVertexRemoveDumplicateVector, kVertexIndexVector);
-   meshFilter.LoadMesh("data/model/cube.mesh");
-   mesh = meshFilter.mesh();
+    meshFilter->LoadMesh("data/model/cube.mesh");
     //初始化opengl
     init_opengl();
     shader = Shader::Find("data/shader/unlit");
