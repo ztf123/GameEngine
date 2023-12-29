@@ -1,0 +1,6 @@
+[2023-12-21 18:22:14.408] [multi_sink] [info] [main.cpp:185] src_image_file_path:E:\project\vsProject\GameEngine\data\urban.jpg
+[2023-12-21 18:22:16.246] [multi_sink] [info] stbi_load E:\project\vsProject\GameEngine\data\urban.jpg,is null:false
+[2023-12-21 18:22:18.648] [multi_sink] [info] [texture2d.cpp:67] compress_success:1
+[2023-12-21 18:22:18.649] [multi_sink] [info] [texture2d.cpp:72] compress_size:8388608
+[2023-12-21 18:22:18.649] [multi_sink] [info] [texture2d.cpp:77] compress_format:33776
+[2023-12-21 18:22:18.658] [multi_sink] [info] [main.cpp:194] finish
