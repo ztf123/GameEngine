@@ -7,7 +7,7 @@ RTTR_REGISTRATION
 	.property("rotation", &Transform::rotation, &Transform::set_rotation)
 	.property("scale", &Transform::scale, &Transform::set_scale);
 }
-Transform::Transform()
+Transform::Transform() :position_(0.f), rotation_(0.f), scale_(1.f)
 {
 }
 

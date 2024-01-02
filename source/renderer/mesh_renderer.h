@@ -18,7 +18,7 @@ public:
     void SetMaterial(Material* material);//…Ë÷√Material
     Material* material() { return material_; }
     void SetView(glm::mat4 view) { view_ = view; };
-    void SetProjection(glm::mat4 projection) { projection = projection_; };
+    void SetProjection(glm::mat4 projection) { projection_= projection; };
     void Render();//‰÷»æ
 private:
     Material* material_;

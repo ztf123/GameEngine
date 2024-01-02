@@ -17,6 +17,7 @@
 #include "component/transform.h"
 #include "renderer/meshfilter.h"
 #include "renderer/mesh_renderer.h"
+#include <glm/gtc/matrix_transform.hpp>
 using namespace std;
 
 static void error_callback(int error, const char* description)
@@ -24,12 +25,7 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error: %s\n", description);
 }
 GLFWwindow* window;
-GLint mvp_location, vpos_location, vcol_location, u_diffuse_texture_location, a_uv_location;
-GLuint vao, vbo, ebo;
-Texture2D* texture2d=nullptr;
-Shader* shader;
-MeshFilter* meshFilter=nullptr;
-Material* material = nullptr;
+
 void init_opengl()
 {
     cout << "init opengl" << endl;
@@ -72,11 +68,6 @@ void init_opengl()
 
 
 
-//创建Texture
-void CreateTexture(std::string image_file_path)
-{
-    texture2d = Texture2D::LoadFromFile(image_file_path);
-}
 
 int main()
 {
@@ -87,7 +78,7 @@ int main()
     GameObject* go = new GameObject("something");
     Transform* transform= dynamic_cast<Transform*>(go->AddComponent("Transform"));
     MeshFilter* mesh_filter= dynamic_cast<MeshFilter*>(go->AddComponent("MeshFilter"));
-    meshFilter->LoadMesh("model/fishsoup_pot.mesh");
+    mesh_filter->LoadMesh("model/fishsoup_pot.mesh");
 
     MeshRenderer* mesh_renderer = dynamic_cast<MeshRenderer*>(go->AddComponent("MeshRenderer"));
     Material* material = new Material();
@@ -106,7 +97,12 @@ int main()
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glClearColor(49.f / 255, 77.f / 255, 121.f / 255, 1.f);
-       
+        //旋转物体
+        static float rotate_eulerAngle = 0.f;
+        rotate_eulerAngle += 0.1f;
+        glm::vec3 rotation = transform->rotation();
+        rotation.y = rotate_eulerAngle;
+        transform->set_rotation(rotation);
         glm::mat4 view = glm::lookAt(glm::vec3(0, 0, 10), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
         glm::mat4 projection = glm::perspective(glm::radians(60.f), ratio, 1.f, 1000.f);
         mesh_renderer->SetView(view);
