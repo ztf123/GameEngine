@@ -20,6 +20,18 @@ void MeshRenderer::SetMaterial(Material* material)
 
 void MeshRenderer::Render()
 {
+    Camera* current_camera = Camera::current_camera();
+    if (current_camera == nullptr)
+    {
+        return;
+    }
+    if ((current_camera->culling_mask()&game_object()->layer()) == 0x00)
+    {
+        return;
+    }
+    glm::mat4 view = current_camera->view_mat4();
+    glm::mat4 projection = current_camera->projection_mat4();
+
 	auto component_transform = game_object()->GetComponent("Transform");
 	Transform* transform = dynamic_cast<Transform*>(component_transform);
 	if (!transform)
@@ -33,7 +45,7 @@ void MeshRenderer::Render()
     glm::mat4 eulerAngleYXZ = glm::eulerAngleYXZ(glm::radians(rotation.y), glm::radians(rotation.x), glm::radians(rotation.z));
     glm::mat4 scale = glm::scale(transform->scale()); //Ëõ·Å;
     model = trans * scale * eulerAngleYXZ;
-    mvp = projection_ * view_ * model;
+    mvp = projection * view* model;
 
     auto component_mesh_filter = game_object()->GetComponent("MeshFilter");
     MeshFilter* mesh_filter = dynamic_cast<MeshFilter*>(component_mesh_filter);

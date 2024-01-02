@@ -6,18 +6,16 @@
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
-
-
-
 #include "renderer/texture2d.h"
 #include "renderer/shader.h"
 #include "renderer/material.h"
-
 #include "component/game_object.h"
 #include "component/transform.h"
 #include "renderer/meshfilter.h"
 #include "renderer/mesh_renderer.h"
+#include "renderer/camera.h"
 #include <glm/gtc/matrix_transform.hpp>
+
 using namespace std;
 
 static void error_callback(int error, const char* description)
@@ -76,6 +74,7 @@ int main()
     init_opengl();
 
     GameObject* go = new GameObject("something");
+    go->set_layer(0x01);
     Transform* transform= dynamic_cast<Transform*>(go->AddComponent("Transform"));
     MeshFilter* mesh_filter= dynamic_cast<MeshFilter*>(go->AddComponent("MeshFilter"));
     mesh_filter->LoadMesh("model/fishsoup_pot.mesh");
@@ -85,6 +84,26 @@ int main()
     material->Parse("material/fishsoup_pot.mat");
     mesh_renderer->SetMaterial(material);
 
+
+    //创建相机 GameObject
+    GameObject* go_camera = new GameObject("main_camera");
+    //挂上 Transform 组件
+    Transform* transform_camera = dynamic_cast<Transform*>(go_camera->AddComponent("Transform"));
+    transform_camera->set_position(glm::vec3(0, 0, 10));
+    //挂上 Camera 组件
+    Camera* camera = dynamic_cast<Camera*>(go_camera->AddComponent("Camera"));
+    camera->set_depth(0);
+    //创建相机2 GameObject
+    auto go_camera_2 = new GameObject("main_camera");
+    //挂上 Transform 组件
+    auto transform_camera_2 = dynamic_cast<Transform*>(go_camera_2->AddComponent("Transform"));
+    transform_camera_2->set_position(glm::vec3(1, 0, 10));
+    //挂上 Camera 组件
+    auto camera_2 = dynamic_cast<Camera*>(go_camera_2->AddComponent("Camera"));
+    //第二个相机不能清除之前的颜色。不然用第一个相机矩阵渲染的物体就被清除 没了。
+    camera_2->set_clear_flag(GL_DEPTH_BUFFER_BIT);
+    camera_2->set_depth(1);
+    camera->set_culling_mask(0x02);
     while (!glfwWindowShouldClose(window))
     {
         float ratio;
@@ -95,19 +114,24 @@ int main()
         glfwGetFramebufferSize(window, &width, &height);
         ratio = width / (float)height;
         glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(49.f / 255, 77.f / 255, 121.f / 255, 1.f);
+
+
+        //设置相机
+        camera->SetView(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+        camera->SetProjection(60.f, ratio, 1.f, 1000.f);
+        camera_2->SetView(glm::vec3(transform_camera_2->position().x, 0, 0), glm::vec3(0, 1, 0));
+        camera_2->SetProjection(60.f, ratio, 1.f, 1000.f);
+
         //旋转物体
         static float rotate_eulerAngle = 0.f;
         rotate_eulerAngle += 0.1f;
         glm::vec3 rotation = transform->rotation();
         rotation.y = rotate_eulerAngle;
         transform->set_rotation(rotation);
-        glm::mat4 view = glm::lookAt(glm::vec3(0, 0, 10), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-        glm::mat4 projection = glm::perspective(glm::radians(60.f), ratio, 1.f, 1000.f);
-        mesh_renderer->SetView(view);
-        mesh_renderer->SetProjection(projection);
-        mesh_renderer->Render();
+
+        Camera::Foreach([&]() {
+            mesh_renderer->Render();
+            });
         glfwSwapBuffers(window);
         glfwPollEvents();
 

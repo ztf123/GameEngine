@@ -37,9 +37,13 @@ public:
 		}
 		return component;
 	}
+	unsigned char layer() { return layer_; }
+	void set_layer(unsigned char layer) { layer_ = layer; }
 private:
 	std::string name_;
 	std::unordered_map<std::string, std::vector<Component*>> component_type_instance_map_;
+
+	unsigned char layer_;
 };
 #endif // GAMEOBJECT_H
 
