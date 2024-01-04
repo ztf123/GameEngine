@@ -6,6 +6,13 @@
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform2.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/ext.hpp>
+
 #include "renderer/texture2d.h"
 #include "renderer/shader.h"
 #include "renderer/material.h"
@@ -15,12 +22,40 @@
 #include "renderer/mesh_renderer.h"
 #include "renderer/camera.h"
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "control/input.h"
+#include "control/key_code.h"
+#include "utils/screen.h"
 using namespace std;
 
 static void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
+}
+//键盘回调
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    Input::RecordKey(key, action);
+}
+//鼠标按键回调
+ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    Input::RecordKey(button, action);
+    std::cout << "mouse_button_callback:" << button << "," << action << std::endl;
+}
+
+//鼠标移动回调
+ void mouse_move_callback(GLFWwindow* window, double x, double y)
+{
+    Input::set_mousePosition(x, y);
+  
+}
+
+
+//鼠标滚轮回调
+ void mouse_scroll_callback(GLFWwindow* window, double x, double y)
+{
+    Input::RecordScroll(y);
+  
 }
 GLFWwindow* window;
 
@@ -52,6 +87,7 @@ void init_opengl()
  
     //设置当前上下文
     glfwMakeContextCurrent(window);
+   
     //初始化GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -60,11 +96,11 @@ void init_opengl()
     }
     //双缓冲区间隔
     glfwSwapInterval(1);
-
-
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetScrollCallback(window, mouse_scroll_callback);
+    glfwSetCursorPosCallback(window, mouse_move_callback);
 }
-
-
 
 
 int main()
@@ -103,31 +139,56 @@ int main()
     //第二个相机不能清除之前的颜色。不然用第一个相机矩阵渲染的物体就被清除 没了。
     camera_2->set_clear_flag(GL_DEPTH_BUFFER_BIT);
     camera_2->set_depth(1);
-    camera->set_culling_mask(0x02);
+    camera_2->set_culling_mask(0x02);
+
+    //上一帧的鼠标位置
+    vec2_ushort last_frame_mouse_position = Input::mousePosition();
+
     while (!glfwWindowShouldClose(window))
     {
-        float ratio;
         int width, height;
        
 
         //获取画面宽高
         glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float)height;
+        Screen::set_width_height(width, height);
         glViewport(0, 0, width, height);
-
+       
 
         //设置相机
         camera->SetView(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-        camera->SetProjection(60.f, ratio, 1.f, 1000.f);
+        camera->SetProjection(60.f, Screen::aspect_ratio(), 1.f, 1000.f);
         camera_2->SetView(glm::vec3(transform_camera_2->position().x, 0, 0), glm::vec3(0, 1, 0));
-        camera_2->SetProjection(60.f, ratio, 1.f, 1000.f);
+        camera_2->SetProjection(60.f, Screen::aspect_ratio(), 1.f, 1000.f);
 
         //旋转物体
-        static float rotate_eulerAngle = 0.f;
-        rotate_eulerAngle += 0.1f;
-        glm::vec3 rotation = transform->rotation();
-        rotation.y = rotate_eulerAngle;
-        transform->set_rotation(rotation);
+        if (Input::GetKeyDown(KEY_CODE_R))
+        {
+            static float rotate_eulerAngle = 0.f;
+            rotate_eulerAngle += 0.1f;
+            glm::vec3 rotation = transform->rotation();
+            rotation.y = rotate_eulerAngle;
+            transform->set_rotation(rotation);
+        }
+        //旋转相机
+        if (Input::GetKeyDown(KEY_CODE_Z) && Input::GetMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+            float degrees = Input::mousePosition().x_ - last_frame_mouse_position.x_;
+
+            glm::mat4 old_mat4 = glm::mat4(1.0f);
+            std::cout << glm::to_string(old_mat4) << std::endl;
+
+            glm::mat4 rotate_mat4 = glm::rotate(old_mat4, glm::radians(degrees), glm::vec3(0.0f, 1.0f, 0.0f));//以相机所在坐标系位置，计算用于旋转的矩阵，这里是零点，所以直接用方阵。
+            glm::vec4 old_pos = glm::vec4(transform_camera->position(), 1.0f);
+            glm::vec4 new_pos = rotate_mat4 * old_pos;//旋转矩阵 * 原来的坐标 = 相机以零点做旋转。
+            std::cout << glm::to_string(new_pos) << std::endl;
+          
+            transform_camera->set_position(glm::vec3(new_pos));
+        }
+        last_frame_mouse_position = Input::mousePosition();
+
+        //鼠标滚轮控制相机远近
+        transform_camera->set_position(transform_camera->position() * (10 - Input::mouse_scroll()) / 10.f);
+        Input::Update();
 
         Camera::Foreach([&]() {
             mesh_renderer->Render();
